@@ -43,7 +43,7 @@ const Sidebar = () => {
             <div className="logo-shine"></div>
             ⚡
           </div>
-          <span className="logo-text">PremiumPro</span>
+          <span className="logo-text">NexusFlow</span>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ const Sidebar = () => {
             <div className="user-status online"></div>
           </div>
           <div className="user-info">
-            <div className="user-name">Alex Morgan</div>
+            <div className="user-role">Alex Morgan</div>
             <div className="user-role">Administrator</div>
           </div>
           <div className="user-actions">

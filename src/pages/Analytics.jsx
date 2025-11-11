@@ -8,12 +8,12 @@ const Analytics = () => {
         <div className="breadcrumb">
           <span>Analytics</span>
           <span className="breadcrumb-divider">/</span>
-          <span className="breadcrumb-active">Statistiques détaillées</span>
+          <span className="breadcrumb-active">Performance Média</span>
         </div>
         <div className="header-actions">
           <button className="btn btn-outline">
             <span className="btn-icon">📊</span>
-            Exporter Rapport
+            Rapport d'Engagement
           </button>
           <button className="btn btn-primary">
             <span className="btn-icon">🔄</span>
@@ -23,10 +23,12 @@ const Analytics = () => {
       </div>
 
       <div className="analytics-grid">
+        {/* Engagement Communauté */}
         <div className="analytics-card large">
           <div className="card-header">
-            <h3 className="card-title">Performance du Trafic</h3>
+            <h3 className="card-title">Engagement Communauté</h3>
             <div className="time-filters">
+              <button className="time-filter">1j</button>
               <button className="time-filter active">7j</button>
               <button className="time-filter">30j</button>
               <button className="time-filter">90j</button>
@@ -42,7 +44,7 @@ const Analytics = () => {
                     className="chart-point"
                     style={{ left: `${(index / 6) * 100}%`, bottom: `${point}%` }}
                   >
-                    <div className="point-tooltip">{point}%</div>
+                    <div className="point-tooltip">{point}k Vues</div>
                   </div>
                 ))}
               </div>
@@ -59,16 +61,17 @@ const Analytics = () => {
           </div>
         </div>
 
+        {/* Canaux d'Acquisition */}
         <div className="analytics-card">
           <div className="card-header">
-            <h3 className="card-title">Sources de Trafic</h3>
+            <h3 className="card-title">Canaux d'Acquisition</h3>
           </div>
           <div className="traffic-sources">
             {[
-              { source: 'Réseaux sociaux', percentage: 45, color: '#D4AF37' },
-              { source: 'Recherche directe', percentage: 25, color: '#667eea' },
-              { source: 'Email', percentage: 15, color: '#f093fb' },
-              { source: 'Référencement', percentage: 10, color: '#4facfe' },
+              { source: 'Instagram / TikTok', percentage: 45, color: '#D4AF37' },
+              { source: 'Accès Direct (Hype)', percentage: 25, color: '#667eea' },
+              { source: 'Newsletter Membres', percentage: 15, color: '#f093fb' },
+              { source: 'Blogs (SneakerNews)', percentage: 10, color: '#4facfe' },
               { source: 'Autres', percentage: 5, color: '#E2E8F0' }
             ].map((item, index) => (
               <div key={index} className="traffic-source">
@@ -93,40 +96,41 @@ const Analytics = () => {
           </div>
         </div>
 
+        {/* Métriques Clés */}
         <div className="analytics-card">
           <div className="card-header">
             <h3 className="card-title">Métriques Clés</h3>
           </div>
           <div className="metrics-grid">
             <div className="metric-item">
-              <div className="metric-icon">👥</div>
+              <div className="metric-icon">👀</div>
               <div className="metric-content">
-                <div className="metric-value">12.4K</div>
-                <div className="metric-label">Visiteurs</div>
+                <div className="metric-value">1.2M</div>
+                <div className="metric-label">Impressions</div>
                 <div className="metric-trend positive">+8.2%</div>
               </div>
             </div>
             <div className="metric-item">
-              <div className="metric-icon">🔄</div>
+              <div className="metric-icon">🎯</div>
               <div className="metric-content">
-                <div className="metric-value">3.2%</div>
-                <div className="metric-label">Taux de rebond</div>
-                <div className="metric-trend negative">-1.5%</div>
+                <div className="metric-value">8.2%</div>
+                <div className="metric-label">Taux de Clic (CTR)</div>
+                <div className="metric-trend positive">+1.5%</div>
               </div>
             </div>
             <div className="metric-item">
               <div className="metric-icon">⏱️</div>
               <div className="metric-content">
-                <div className="metric-value">4m 12s</div>
-                <div className="metric-label">Durée moyenne</div>
+                <div className="metric-value">3m 45s</div>
+                <div className="metric-label">Temps / Session</div>
                 <div className="metric-trend positive">+45s</div>
               </div>
             </div>
             <div className="metric-item">
               <div className="metric-icon">📱</div>
               <div className="metric-content">
-                <div className="metric-value">68%</div>
-                <div className="metric-label">Mobile</div>
+                <div className="metric-value">72%</div>
+                <div className="metric-label">Achats sur Mobile</div>
                 <div className="metric-trend positive">+12%</div>
               </div>
             </div>
