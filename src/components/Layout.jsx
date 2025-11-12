@@ -1,18 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import './Layout.css';
 
 const Layout = ({ children }) => {
-  // Plus besoin des états pour gérer l'ouverture/fermeture
-  // La sidebar est toujours visible
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 1200;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  const handleSidebarToggle = () => {
+    if (isMobile) {
+      setIsMobileSidebarOpen(!isMobileSidebarOpen);
+    } else {
+      setIsSidebarCollapsed(!isSidebarCollapsed);
+    }
+  };
+
+  const handleSidebarClose = () => {
+    setIsMobileSidebarOpen(false);
+  };
+
+  const layoutClass = `layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`;
 
   return (
-    <div className="layout">
-      <Sidebar />
+    <div className={layoutClass}>
+      <Sidebar 
+        isCollapsed={isSidebarCollapsed}
+        isMobileOpen={isMobileSidebarOpen}
+        onToggle={handleSidebarToggle}
+        onClose={handleSidebarClose}
+      />
       
       <div className="layout-main">
-        <Navbar />
+        <Navbar onMenuToggle={handleSidebarToggle} />
         
         <main className="layout-content">
           <div className="content-wrapper">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Navbar.css';
 
-const Navbar = () => {
+const Navbar = ({ onMenuToggle }) => {  // Ajouter la prop onMenuToggle
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -33,7 +33,19 @@ const Navbar = () => {
   return (
     <header className={`navbar ${isScrolled ? 'navbar-scrolled' : ''}`}>
       <div className="navbar-left">
-        {/* Supprimer le bouton de toggle de la sidebar */}
+        {/* Bouton menu pour mobile */}
+        <button 
+          className="sidebar-toggle-mobile"
+          onClick={onMenuToggle}
+          title="Ouvrir le menu"
+        >
+          <div className="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+        
         <div className="navbar-search">
           <input 
             type="text" 

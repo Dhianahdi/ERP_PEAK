@@ -4,22 +4,43 @@ import './ModalCommande.css';
 const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) => {
   const [formData, setFormData] = useState({
     fournisseurId: '',
-    dateLivraison: '',
+    dateLivraison: '', // "DMP" / Date de livraison
+    dateCommande: '', // Nouveau champ
+    numCommande: '', // Nouveau champ
     produits: [],
     notes: ''
   });
 
-  const [etape, setEtape] = useState(1); // 1: Catalogue, 2: Produits, 3: Récap
-  const [categorieSelectionnee, setCategorieSelectionnee] = useState('');
+  const [etape, setEtape] = useState(1); // 1: Catalogue, 2: Infos & Produits, 3: Récap
+  const [categorieSelectionnee, setCategorieSelectionnee] = useState(''); // Sélectionnée à l'étape 1
   const [produitsSelectionnes, setProduitsSelectionnes] = useState({});
   const [produitDetail, setProduitDetail] = useState(null);
   const [produitASupprimer, setProduitASupprimer] = useState(null);
 
-  // Filtrer les produits par catégorie
+  // États pour la recherche et la vue de l'étape 2
+  const [viewMode, setViewMode] = useState('table'); // 'table' par défaut
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filtrer les produits par catégorie (choisie à l'étape 1) ET par terme de recherche
   const produitsFiltres = useMemo(() => {
-    if (!categorieSelectionnee) return produits;
-    return produits.filter(p => p.categorie === categorieSelectionnee);
-  }, [produits, categorieSelectionnee]);
+    let filtered = produits;
+
+    // 1. Filtrer par catégorie sélectionnée
+    if (categorieSelectionnee) {
+      filtered = filtered.filter(p => p.categorie === categorieSelectionnee);
+    }
+
+    // 2. Filtrer par terme de recherche
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.nom.toLowerCase().includes(lowerSearchTerm) ||
+        p.description.toLowerCase().includes(lowerSearchTerm)
+      );
+    }
+
+    return filtered;
+  }, [produits, categorieSelectionnee, searchTerm]);
 
   // Types de cartons disponibles
   const typesCartons = [
@@ -83,7 +104,6 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
     const produitsArray = Object.values(produitsSelectionnes);
     const sousTotal = produitsArray.reduce((sum, produit) => sum + produit.prixTotal, 0);
     
-    // Calcul des frais de cartons
     const fraisCartons = produitsArray.reduce((sum, produit) => {
       const carton = typesCartons.find(c => c.type === produit.carton);
       return sum + (carton ? carton.prix : 0);
@@ -102,8 +122,8 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
   };
 
   const passerAEtapeSuivante = () => {
-    if (etape === 2 && Object.keys(produitsSelectionnes).length === 0) {
-      alert('Veuillez sélectionner au moins un produit');
+    if (etape === 2 && (!formData.fournisseurId || Object.keys(produitsSelectionnes).length === 0)) {
+      alert('Veuillez sélectionner un fournisseur et au moins un produit');
       return;
     }
     setEtape(etape + 1);
@@ -121,9 +141,15 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
     const totals = calculerTotaux();
 
     const nouvelleCommande = {
+      // Champs du nouvel en-tête de commande
+      numCommande: formData.numCommande,
+      dateCommande: formData.dateCommande,
+      dateLivraison: formData.dateLivraison,
+      
       fournisseurId: parseInt(formData.fournisseurId),
       fournisseurNom: fournisseur.nom,
       fournisseurContact: fournisseur.contact,
+      
       produits: Object.values(produitsSelectionnes).map(p => ({
         id: p.id,
         nom: p.nom,
@@ -158,7 +184,7 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
               </div>
               <div className={`etape ${etape >= 2 ? 'active' : ''}`}>
                 <span className="etape-numero">2</span>
-                <span className="etape-label">Sélection</span>
+                <span className="etape-label">Infos & Produits</span>
               </div>
               <div className={`etape ${etape >= 3 ? 'active' : ''}`}>
                 <span className="etape-numero">3</span>
@@ -173,9 +199,52 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
           {/* Étape 1: Sélection du catalogue */}
           {etape === 1 && (
             <div className="form-section">
-              <h3>📋 Configuration de la Commande</h3>
+              <h3>🎯 Sélection du Catalogue</h3>
               
-              <div className="form-grid">
+              <div className="catalogue-selection">
+                <div className="modal-categories-grid">
+                  <button
+                    type="button"
+                    className={`modal-categorie-btn ${categorieSelectionnee === '' ? 'active' : ''}`}
+                    onClick={() => setCategorieSelectionnee('')}
+                  >
+                    <span className="modal-categorie-icon">🌍</span>
+                    <span className="modal-categorie-nom">Tous les produits</span>
+                    <span className="modal-categorie-count">
+                      ({produits.length} produits)
+                    </span>
+                  </button>
+                  {categories.map(categorie => (
+                    <button
+                      key={categorie}
+                      type="button"
+                      className={`modal-categorie-btn ${categorieSelectionnee === categorie ? 'active' : ''}`}
+                      onClick={() => setCategorieSelectionnee(categorie)}
+                    >
+                      <span className="modal-categorie-icon">
+                        {categorie.includes('Baskets') ? '👟' : 
+                         categorie.includes('Vêtements') ? '👕' :
+                         categorie.includes('Accessoires') ? '🎒' :
+                         categorie.includes('Running') ? '🏃' : '⚽'}
+                      </span>
+                      <span className="modal-categorie-nom">{categorie}</span>
+                      <span className="modal-categorie-count">
+                        ({produits.filter(p => p.categorie === categorie).length} produits)
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Étape 2: Informations & Sélection des produits */}
+          {etape === 2 && (
+            <div className="form-section">
+              
+              {/* NOUVEAU: Formulaire En-tête de Commande */}
+              <h3>📋 En-tête de Commande</h3>
+              <div className="form-grid header-form-grid">
                 <div className="form-group">
                   <label>Fournisseur *</label>
                   <select
@@ -194,7 +263,28 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
                 </div>
 
                 <div className="form-group">
-                  <label>Date de livraison souhaitée</label>
+                  <label>Numéro de Commande (facultatif)</label>
+                  <input
+                    type="text"
+                    value={formData.numCommande}
+                    onChange={(e) => setFormData(prev => ({ ...prev, numCommande: e.target.value }))}
+                    className="input-large"
+                    placeholder="Ex: PO-12345"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Date de Commande</label>
+                  <input
+                    type="date"
+                    value={formData.dateCommande}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dateCommande: e.target.value }))}
+                    className="input-large"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Date de livraison souhaitée (DMP)</label>
                   <input
                     type="date"
                     value={formData.dateLivraison}
@@ -226,90 +316,150 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
                 </div>
               )}
 
-              <div className="catalogue-selection">
-                <h4>🎯 Sélection du Catalogue</h4>
-                <div className="modal-categories-grid">
-                  {categories.map(categorie => (
-                    <button
-                      key={categorie}
-                      type="button"
-                      className={`modal-categorie-btn ${categorieSelectionnee === categorie ? 'active' : ''}`}
-                      onClick={() => setCategorieSelectionnee(categorie)}
-                    >
-                      <span className="modal-categorie-icon">
-                        {categorie.includes('Baskets') ? '👟' : 
-                         categorie.includes('Vêtements') ? '👕' :
-                         categorie.includes('Accessoires') ? '🎒' :
-                         categorie.includes('Running') ? '🏃' : '⚽'}
-                      </span>
-                      <span className="modal-categorie-nom">{categorie}</span>
-                      <span className="modal-categorie-count">
-                        ({produits.filter(p => p.categorie === categorie).length} produits)
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+              {/* SECTION: Sélection des Produits */}
+              <h3 className="section-divider">🛍️ Sélection des Produits {categorieSelectionnee && `- ${categorieSelectionnee}`}</h3>
 
-          {/* Étape 2: Sélection des produits */}
-          {etape === 2 && (
-            <div className="form-section">
-              <h3>🛍️ Sélection des Produits {categorieSelectionnee && `- ${categorieSelectionnee}`}</h3>
-              
               <div className="modal-selection-container">
                 {/* Catalogue des produits */}
                 <div className="modal-catalogue-produits">
                   <div className="modal-catalogue-header">
-                    <h4>Catalogue des Produits</h4>
+                    <h4>
+                      Catalogue
+                    </h4>
                     <div className="catalogue-filters">
                       <input
                         type="text"
                         placeholder="Rechercher un produit..."
                         className="modal-search-input"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                       />
+                      <div className="modal-view-toggle">
+                        <button
+                          type="button"
+                          title="Vue Tableau"
+                          className={`modal-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+                          onClick={() => setViewMode('table')}
+                        >
+                          📋
+                        </button>
+                        <button
+                          type="button"
+                          title="Vue Grille"
+                          className={`modal-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                          onClick={() => setViewMode('grid')}
+                        >
+                          🔲
+                        </button>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="modal-produits-grid">
-                    {produitsFiltres.map(produit => (
-                      <div key={produit.id} className="modal-produit-card">
-                        <div className="modal-produit-image">
-                          <img 
-                            src={produit.details?.images?.[0] || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop'} 
-                            alt={produit.nom}
-                          />
+                  {/* Wrapper pour la liste scrollable */}
+                  <div className="modal-produits-list-wrapper">
+                    {produitsFiltres.length === 0 ? (
+                      <div className="modal-empty-selection">
+                        <div className="modal-empty-icon">🤷</div>
+                        <p>Aucun produit ne correspond à vos filtres</p>
+                      </div>
+                    ) : viewMode === 'grid' ? (
+                      // Vue Grille
+                      <div className="modal-produits-grid">
+                        {produitsFiltres.map(produit => (
+                          <div key={produit.id} className="modal-produit-card">
+                            <div className="modal-produit-image">
+                              <img 
+                                src={produit.details?.images?.[0] || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=300&fit=crop'} 
+                                alt={produit.nom}
+                              />
+                            </div>
+                            <div className="modal-produit-info">
+                              <h5 className="modal-produit-nom">{produit.nom}</h5>
+                              <p className="modal-produit-description">{produit.description}</p>
+                              <div className="modal-produit-prix">{produit.prix} €</div>
+                              <div className="modal-produit-stock">Stock: {produit.stock}</div>
+                            </div>
+                            <div className="modal-produit-actions">
+                              <button
+                                type="button"
+                                onClick={() => setProduitDetail(produit)}
+                                className="modal-btn-details"
+                              >
+                                👁️ Détails
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => ajouterProduit(produit)}
+                                className="modal-btn-ajouter"
+                                disabled={produitsSelectionnes[produit.id]}
+                              >
+                                {produitsSelectionnes[produit.id] ? '✓ Ajouté' : '+ Ajouter'}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      // Vue Tableau
+                      <div className="modal-produits-table">
+                        <div className="modal-produit-table-header">
+                          <div className="modal-produit-table-col image">Image</div>
+                          <div className="modal-produit-table-col info">Produit</div>
+                          <div className="modal-produit-table-col desc">Description</div>
+                          <div className="modal-produit-table-col prix">Prix</div>
+                          <div className="modal-produit-table-col stock">Stock</div>
+                          <div className="modal-produit-table-col actions">Actions</div>
                         </div>
-                        <div className="modal-produit-info">
-                          <h5 className="modal-produit-nom">{produit.nom}</h5>
-                          <p className="modal-produit-description">{produit.description}</p>
-                          <div className="modal-produit-prix">{produit.prix} €</div>
-                          <div className="modal-produit-stock">Stock: {produit.stock}</div>
-                        </div>
-                        <div className="modal-produit-actions">
-                          <button
-                            type="button"
-                            onClick={() => setProduitDetail(produit)}
-                            className="modal-btn-details"
-                          >
-                            👁️ Détails
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => ajouterProduit(produit)}
-                            className="modal-btn-ajouter"
-                            disabled={produitsSelectionnes[produit.id]}
-                          >
-                            {produitsSelectionnes[produit.id] ? '✓ Ajouté' : '+ Ajouter'}
-                          </button>
+                        <div className="modal-produit-table-body">
+                          {produitsFiltres.map(produit => (
+                            <div key={produit.id} className="modal-produit-table-row">
+                              <div className="modal-produit-table-col image">
+                                <img 
+                                  src={produit.details?.images?.[0] || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop'} 
+                                  alt={produit.nom}
+                                />
+                              </div>
+                              <div className="modal-produit-table-col info">
+                                <h5 className="modal-produit-nom-table">{produit.nom}</h5>
+                                <span className="modal-produit-categorie-table">{produit.categorie}</span>
+                              </div>
+                              <div className="modal-produit-table-col desc">
+                                <p className="modal-produit-description-table">{produit.description}</p>
+                              </div>
+                              <div className="modal-produit-table-col prix">
+                                <div className="modal-produit-prix">{produit.prix} €</div>
+                              </div>
+                              <div className="modal-produit-table-col stock">
+                                <div className="modal-produit-stock">Stock: {produit.stock}</div>
+                              </div>
+                              <div className="modal-produit-table-col actions">
+                                <button
+                                  type="button"
+                                  onClick={() => setProduitDetail(produit)}
+                                  className="modal-btn-details small"
+                                  title="Détails"
+                                >
+                                  👁️
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => ajouterProduit(produit)}
+                                  className="modal-btn-ajouter small"
+                                  disabled={produitsSelectionnes[produit.id]}
+                                  title={produitsSelectionnes[produit.id] ? 'Ajouté' : 'Ajouter'}
+                                >
+                                  {produitsSelectionnes[produit.id] ? '✓' : '+'}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
 
-                {/* Liste des produits sélectionnés */}
+                {/* Liste des produits sélectionnés (Panneau de droite) */}
                 <div className="modal-produits-selectionnes-panel">
                   <div className="modal-panel-header">
                     <h4>📦 Produits Sélectionnés ({produitsSelectionnesArray.length})</h4>
@@ -417,19 +567,27 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
               
               <div className="recap-grid">
                 <div className="recap-card large">
-                  <h4>Informations Fournisseur</h4>
+                  <h4>Informations Commande & Fournisseur</h4>
                   <div className="recap-info">
                     <div className="recap-item">
                       <span>Fournisseur:</span>
                       <strong>{fournisseurSelectionne?.nom}</strong>
                     </div>
                     <div className="recap-item">
-                      <span>Contact:</span>
-                      <span>{fournisseurSelectionne?.contact}</span>
+                      <span>Num. Commande:</span>
+                      <span>{formData.numCommande || 'Non spécifié'}</span>
                     </div>
                     <div className="recap-item">
-                      <span>Date livraison:</span>
+                      <span>Date Commande:</span>
+                      <span>{formData.dateCommande || 'Non spécifiée'}</span>
+                    </div>
+                    <div className="recap-item">
+                      <span>Date livraison (DMP):</span>
                       <span>{formData.dateLivraison || 'Non spécifiée'}</span>
+                    </div>
+                    <div className="recap-item">
+                      <span>Contact Fournisseur:</span>
+                      <span>{fournisseurSelectionne?.contact}</span>
                     </div>
                   </div>
                 </div>
@@ -517,8 +675,7 @@ const ModalCommande = ({ onClose, onSave, produits, fournisseurs, categories }) 
                   onClick={passerAEtapeSuivante}
                   className="btn btn-primary"
                   disabled={
-                    (etape === 1 && !formData.fournisseurId) ||
-                    (etape === 2 && produitsSelectionnesArray.length === 0)
+                    (etape === 2 && (!formData.fournisseurId || produitsSelectionnesArray.length === 0))
                   }
                 >
                   Continuer →

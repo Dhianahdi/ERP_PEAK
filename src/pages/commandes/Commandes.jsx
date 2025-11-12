@@ -3,6 +3,8 @@ import { commandes, produits, fournisseurs, categories } from './data/mockData';
 import CommandesTable from './components/CommandesTable';
 import FiltresCommandes from './components/FiltresCommandes';
 import ModalCommande from './components/ModalCommande';
+import ModalEditCommande from './components/ModalEditCommande';
+import ModalConfirmation from './components/ModalConfirmation';
 import DetailsCommande from './components/DetailsCommande';
 import './Commandes.css';
 
@@ -16,7 +18,11 @@ const Commandes = () => {
     recherche: ''
   });
   const [commandeSelectionnee, setCommandeSelectionnee] = useState(null);
+  const [commandeAEditer, setCommandeAEditer] = useState(null);
+  const [commandeASupprimer, setCommandeASupprimer] = useState(null);
   const [modalOuvert, setModalOuvert] = useState(false);
+  const [modalEditOuvert, setModalEditOuvert] = useState(false);
+  const [modalConfirmationOuvert, setModalConfirmationOuvert] = useState(false);
   const [detailsOuverts, setDetailsOuverts] = useState({});
 
   // Filtrer les commandes
@@ -57,6 +63,27 @@ const Commandes = () => {
       statut: 'en_attente'
     };
     setCommandesData(prev => [commandeAvecId, ...prev]);
+    setModalOuvert(false);
+  };
+
+  const editerCommande = (commandeModifiee) => {
+    setCommandesData(prev =>
+      prev.map(commande =>
+        commande.id === commandeModifiee.id
+          ? { ...commande, ...commandeModifiee }
+          : commande
+      )
+    );
+    setModalEditOuvert(false);
+    setCommandeAEditer(null);
+  };
+
+  const supprimerCommande = () => {
+    if (commandeASupprimer) {
+      setCommandesData(prev => prev.filter(commande => commande.id !== commandeASupprimer.id));
+      setModalConfirmationOuvert(false);
+      setCommandeASupprimer(null);
+    }
   };
 
   const mettreAJourStatut = (commandeId, nouveauStatut) => {
@@ -67,6 +94,16 @@ const Commandes = () => {
           : commande
       )
     );
+  };
+
+  const ouvrirModalEdition = (commande) => {
+    setCommandeAEditer(commande);
+    setModalEditOuvert(true);
+  };
+
+  const ouvrirModalConfirmation = (commande) => {
+    setCommandeASupprimer(commande);
+    setModalConfirmationOuvert(true);
   };
 
   return (
@@ -133,18 +170,47 @@ const Commandes = () => {
           toggleDetails={toggleDetails}
           mettreAJourStatut={mettreAJourStatut}
           setCommandeSelectionnee={setCommandeSelectionnee}
+          onEdit={ouvrirModalEdition}
+          onDelete={ouvrirModalConfirmation}
         />
       </div>
 
       {/* Modal pour ajouter une commande */}
       {modalOuvert && (
-    <ModalCommande
-  onClose={() => setModalOuvert(false)}
-  onSave={ajouterCommande}
-  produits={produits}
-  fournisseurs={fournisseurs}
-  categories={categories}  // ← Ajouter cette ligne
-/>
+        <ModalCommande
+          onClose={() => setModalOuvert(false)}
+          onSave={ajouterCommande}
+          produits={produits}
+          fournisseurs={fournisseurs}
+          categories={categories}
+        />
+      )}
+
+      {/* Modal pour éditer une commande */}
+      {modalEditOuvert && commandeAEditer && (
+        <ModalEditCommande
+          commande={commandeAEditer}
+          onClose={() => {
+            setModalEditOuvert(false);
+            setCommandeAEditer(null);
+          }}
+          onSave={editerCommande}
+          produits={produits}
+          fournisseurs={fournisseurs}
+          categories={categories}
+        />
+      )}
+
+      {/* Modal de confirmation de suppression */}
+      {modalConfirmationOuvert && commandeASupprimer && (
+        <ModalConfirmation
+          commande={commandeASupprimer}
+          onClose={() => {
+            setModalConfirmationOuvert(false);
+            setCommandeASupprimer(null);
+          }}
+          onConfirm={supprimerCommande}
+        />
       )}
 
       {/* Modal pour voir les détails d'une commande */}

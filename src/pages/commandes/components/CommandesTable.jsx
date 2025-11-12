@@ -1,36 +1,38 @@
-import React, { useState, useMemo } from 'react';
-import './CommandesTable.css';
+import React, { useState, useMemo } from "react";
+import "./CommandesTable.css";
 
 const CommandesTable = ({ 
   commandes, 
   detailsOuverts, 
   toggleDetails, 
   mettreAJourStatut,
-  setCommandeSelectionnee 
+  setCommandeSelectionnee,
+  onEdit,           // Ajouter cette ligne
+  onDelete 
 }) => {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Fonction pour formater les nombres en toute sécurité
   const formatMontant = (montant) => {
-    if (montant === undefined || montant === null) return '0.00';
-    return parseFloat(montant).toLocaleString('fr-FR', {
+    if (montant === undefined || montant === null) return "0.00";
+    return parseFloat(montant).toLocaleString("fr-FR", {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     });
   };
 
   // Fonction pour formater les dates en toute sécurité
   const formatDate = (dateString) => {
-    if (!dateString) return 'Date invalide';
+    if (!dateString) return "Date invalide";
     try {
-      return new Date(dateString).toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+      return new Date(dateString).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
       });
     } catch (error) {
-      return 'Date invalide';
+      return "Date invalide";
     }
   };
 
@@ -47,38 +49,61 @@ const CommandesTable = ({
 
   const getStatutStyle = (statut) => {
     const styles = {
-      en_attente: { background: 'linear-gradient(135deg, #FFF3CD, #FFEAA7)', color: '#856404', label: 'En Attente' },
-      confirme: { background: 'linear-gradient(135deg, #D1ECF1, #A8E6CF)', color: '#0C5460', label: 'Confirmée' },
-      livraison: { background: 'linear-gradient(135deg, #D4EDDA, #C8E6C9)', color: '#155724', label: 'En Livraison' },
-      livre: { background: 'linear-gradient(135deg, #E2E3E5, #F5F5F5)', color: '#383D41', label: 'Livrée' },
-      annule: { background: 'linear-gradient(135deg, #F8D7DA, #FFCDD2)', color: '#721C24', label: 'Annulée' }
+      en_attente: {
+        background: "linear-gradient(135deg, #FFF3CD, #FFEAA7)",
+        color: "#856404",
+        label: "En Attente",
+      },
+      confirme: {
+        background: "linear-gradient(135deg, #D1ECF1, #A8E6CF)",
+        color: "#0C5460",
+        label: "Confirmée",
+      },
+      livraison: {
+        background: "linear-gradient(135deg, #D4EDDA, #C8E6C9)",
+        color: "#155724",
+        label: "En Livraison",
+      },
+      livre: {
+        background: "linear-gradient(135deg, #E2E3E5, #F5F5F5)",
+        color: "#383D41",
+        label: "Livrée",
+      },
+      annule: {
+        background: "linear-gradient(135deg, #F8D7DA, #FFCDD2)",
+        color: "#721C24",
+        label: "Annulée",
+      },
     };
     return styles[statut] || styles.en_attente;
   };
 
   const getBadgePrix = (montant) => {
     const montantNum = parseFloat(montant) || 0;
-    if (montantNum > 5000) return 'premium';
-    if (montantNum > 2000) return 'moyen';
-    return 'standard';
+    if (montantNum > 5000) return "premium";
+    if (montantNum > 2000) return "moyen";
+    return "standard";
   };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
     // Scroll vers le haut de la table
-    const tableContainer = document.querySelector('.table-container');
+    const tableContainer = document.querySelector(".table-container");
     if (tableContainer) {
-      tableContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      tableContainer.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const renderPaginationButtons = () => {
     const buttons = [];
     const maxVisibleButtons = 5;
-    
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisibleButtons / 2));
+
+    let startPage = Math.max(
+      1,
+      currentPage - Math.floor(maxVisibleButtons / 2)
+    );
     let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
-    
+
     if (endPage - startPage + 1 < maxVisibleButtons) {
       startPage = Math.max(1, endPage - maxVisibleButtons + 1);
     }
@@ -108,7 +133,9 @@ const CommandesTable = ({
       );
       if (startPage > 2) {
         buttons.push(
-          <span key="ellipsis1" className="pagination-ellipsis">...</span>
+          <span key="ellipsis1" className="pagination-ellipsis">
+            ...
+          </span>
         );
       }
     }
@@ -119,7 +146,7 @@ const CommandesTable = ({
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`btn-pagination ${currentPage === i ? 'active' : ''}`}
+          className={`btn-pagination ${currentPage === i ? "active" : ""}`}
         >
           {i}
         </button>
@@ -130,7 +157,9 @@ const CommandesTable = ({
     if (endPage < totalPages) {
       if (endPage < totalPages - 1) {
         buttons.push(
-          <span key="ellipsis2" className="pagination-ellipsis">...</span>
+          <span key="ellipsis2" className="pagination-ellipsis">
+            ...
+          </span>
         );
       }
       buttons.push(
@@ -179,49 +208,63 @@ const CommandesTable = ({
 
       {/* Corps du tableau */}
       <div className="table-body">
-        {paginatedCommandes.map(commande => (
+        {paginatedCommandes.map((commande) => (
           <div key={commande.id} className="commande-item">
             <div className="table-row main-row">
               <div className="col-checkbox">
                 <input type="checkbox" />
               </div>
-              
+
               {/* Bouton détails déplacé à gauche */}
               <div className="col-details">
-                <button 
+                <button
                   className="btn-details"
                   onClick={() => toggleDetails(commande.id)}
-                  title={detailsOuverts[commande.id] ? "Masquer les détails" : "Afficher les détails"}
+                  title={
+                    detailsOuverts[commande.id]
+                      ? "Masquer les détails"
+                      : "Afficher les détails"
+                  }
                 >
-                  {detailsOuverts[commande.id] ? '▲' : '▼'}
+                  {detailsOuverts[commande.id] ? "▲" : "▼"}
                 </button>
               </div>
-              
+
               <div className="col-numero">
-                <span className="numero-badge">{commande.numero || 'N/A'}</span>
+                <span className="numero-badge">{commande.numero || "N/A"}</span>
               </div>
-              
+
               <div className="col-fournisseur">
                 <div className="fournisseur-info">
-                  <div className="fournisseur-nom">{commande.fournisseurNom || 'Non spécifié'}</div>
-                  <div className="fournisseur-contact">{commande.fournisseurContact || ''}</div>
+                  <div className="fournisseur-nom">
+                    {commande.fournisseurNom || "Non spécifié"}
+                  </div>
+                  <div className="fournisseur-contact">
+                    {commande.fournisseurContact || ""}
+                  </div>
                 </div>
               </div>
-              
+
               <div className="col-date">
                 {formatDate(commande.dateCommande)}
               </div>
-              
+
               <div className="col-montant">
-                <span className={`montant-badge ${getBadgePrix(commande.montantTotal)}`}>
+                <span
+                  className={`montant-badge ${getBadgePrix(
+                    commande.montantTotal
+                  )}`}
+                >
                   {formatMontant(commande.montantTotal)} €
                 </span>
               </div>
-              
+
               <div className="col-statut">
                 <select
-                  value={commande.statut || 'en_attente'}
-                  onChange={(e) => mettreAJourStatut(commande.id, e.target.value)}
+                  value={commande.statut || "en_attente"}
+                  onChange={(e) =>
+                    mettreAJourStatut(commande.id, e.target.value)
+                  }
                   className={`statut-select ${commande.statut}`}
                   style={getStatutStyle(commande.statut)}
                 >
@@ -232,19 +275,29 @@ const CommandesTable = ({
                   <option value="annule">Annulée</option>
                 </select>
               </div>
-              
+
               <div className="col-actions">
-                <button 
+                <button
                   className="btn-action view"
                   onClick={() => setCommandeSelectionnee(commande)}
                   title="Voir détails complets"
                 >
                   👁️
                 </button>
-                <button className="btn-action edit" title="Modifier">
+                <button
+                  className="btn-action edit"
+                  title="Modifier"
+                  onClick={() => onEdit(commande)}
+                >
+                  {" "}
                   ✏️
                 </button>
-                <button className="btn-action delete" title="Supprimer">
+                <button
+                  className="btn-action delete"
+                  title="Supprimer"
+                  onClick={() => onDelete(commande)}
+                >
+                  {" "}
                   🗑️
                 </button>
               </div>
@@ -259,36 +312,55 @@ const CommandesTable = ({
                     <div className="produits-list">
                       {(commande.produits || []).map((produit, index) => (
                         <div key={index} className="produit-item">
-                          <span className="produit-nom">{produit.nom || 'Produit sans nom'}</span>
-                          <span className="produit-quantite">Quantité: {produit.quantite || 0}</span>
-                          <span className="produit-prix">{formatMontant(produit.prixUnitaire)} €/unité</span>
-                          <span className="produit-total">{formatMontant(produit.prixTotal)} €</span>
+                          <span className="produit-nom">
+                            {produit.nom || "Produit sans nom"}
+                          </span>
+                          <span className="produit-quantite">
+                            Quantité: {produit.quantite || 0}
+                          </span>
+                          <span className="produit-prix">
+                            {formatMontant(produit.prixUnitaire)} €/unité
+                          </span>
+                          <span className="produit-total">
+                            {formatMontant(produit.prixTotal)} €
+                          </span>
                         </div>
                       ))}
-                      {(!commande.produits || commande.produits.length === 0) && (
+                      {(!commande.produits ||
+                        commande.produits.length === 0) && (
                         <div className="produit-item empty">
-                          <span className="produit-nom">Aucun produit dans cette commande</span>
+                          <span className="produit-nom">
+                            Aucun produit dans cette commande
+                          </span>
                         </div>
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="details-grid">
                     <div className="detail-item">
                       <span className="detail-label">Sous-total HT:</span>
-                      <span className="detail-value">{formatMontant(commande.sousTotal)} €</span>
+                      <span className="detail-value">
+                        {formatMontant(commande.sousTotal)} €
+                      </span>
                     </div>
                     <div className="detail-item">
                       <span className="detail-label">TVA (20%):</span>
-                      <span className="detail-value">{formatMontant(commande.tva)} €</span>
+                      <span className="detail-value">
+                        {formatMontant(commande.tva)} €
+                      </span>
                     </div>
                     <div className="detail-item">
                       <span className="detail-label">Frais de port:</span>
-                      <span className="detail-value">{formatMontant(commande.fraisPort)} €</span>
+                      <span className="detail-value">
+                        {formatMontant(commande.fraisPort)} €
+                      </span>
                     </div>
                     <div className="detail-item total">
                       <span className="detail-label">Total TTC:</span>
-                      <span className="detail-value">{formatMontant(commande.montantTotal)} €</span>
+                      <span className="detail-value">
+                        {formatMontant(commande.montantTotal)} €
+                      </span>
                     </div>
                   </div>
 
@@ -325,12 +397,13 @@ const CommandesTable = ({
       {commandes.length > 0 && (
         <div className="pagination">
           <div className="pagination-info">
-            Affichage de {startItem} à {endItem} sur {commandes.length} commande{commandes.length > 1 ? 's' : ''}
+            Affichage de {startItem} à {endItem} sur {commandes.length} commande
+            {commandes.length > 1 ? "s" : ""}
           </div>
-          
+
           <div className="pagination-controls">
-            <select 
-              value={pageSize} 
+            <select
+              value={pageSize}
               onChange={(e) => {
                 setPageSize(Number(e.target.value));
                 setCurrentPage(1);
@@ -342,7 +415,7 @@ const CommandesTable = ({
               <option value="20">20 par page</option>
               <option value="50">50 par page</option>
             </select>
-            
+
             <div className="pagination-buttons">
               {renderPaginationButtons()}
             </div>
